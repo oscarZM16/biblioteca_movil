@@ -79,29 +79,84 @@ const LibroDetail = (props) => {
   };
 
   const updateLibro = async () => {
-    const dbRef = doc(db, 'Libros', props.route.params.libroId);
-    await updateDoc(dbRef, {
-      nombre: Libros.nombre,
-      descripcion: Libros.descripcion,
-      cantidad: parseInt(Libros.cantidad),
-      generoLiterario: Libros.generoLiterario,
-      tematica: Libros.tematica,
-      publicoObjetivo: Libros.publicoObjetivo,
-      tipoObra: Libros.tipoObra,
-    });
-    Alert.alert('Libro actualizado');
-    props.navigation.navigate('LibrosList');
+    const libroId = props.route.params.libroId;
+    const dbRef = doc(db, 'Libros', libroId);
+
+    try {
+      const docSnap = await getDoc(dbRef);
+      if (!docSnap.exists()) {
+        Alert.alert('Error', 'El libro no existe');
+        return;
+      }
+
+      const libroActual = docSnap.data();
+      const nuevaCantidad = parseInt(Libros.cantidad);
+      const cantidadPrestada = libroActual.cantidadPrestada || 0;
+
+      if (isNaN(nuevaCantidad) || nuevaCantidad < cantidadPrestada) {
+        Alert.alert(
+          'Cantidad inválida',
+          `La nueva cantidad no puede ser menor que la cantidad prestada (${cantidadPrestada}).`
+        );
+        return;
+      }
+
+      const nuevaCantidadDisponible = nuevaCantidad - cantidadPrestada;
+
+      await updateDoc(dbRef, {
+        nombre: Libros.nombre,
+        descripcion: Libros.descripcion,
+        cantidad: nuevaCantidad,
+        cantidadDisponible: nuevaCantidadDisponible,
+        generoLiterario: Libros.generoLiterario,
+        tematica: Libros.tematica,
+        publicoObjetivo: Libros.publicoObjetivo,
+        tipoObra: Libros.tipoObra,
+      });
+
+      Alert.alert('Libro actualizado');
+      props.navigation.navigate('LibrosList');
+    } catch (error) {
+      console.error('Error actualizando libro:', error);
+      Alert.alert('Error', 'No se pudo actualizar el libro');
+    }
   };
 
   const deleteLibro = async () => {
-    const dbRef = doc(db, 'Libros', props.route.params.libroId);
-    await deleteDoc(dbRef);
-    props.navigation.navigate('LibrosList');
+    const libroId = props.route.params.libroId;
+
+    try {
+      // Verifica si hay préstamos asociados al libro
+      const prestamosSnapshot = await getDocs(
+        collection(db, 'Prestamos')
+      );
+
+      const prestamosAsociados = prestamosSnapshot.docs.filter(
+        doc => doc.data().libroId === libroId
+      );
+
+      if (prestamosAsociados.length > 0) {
+        Alert.alert(
+          'No se puede eliminar',
+          'Este libro tiene préstamos asociados y no puede ser eliminado.'
+        );
+        return;
+      }
+
+      // Si no hay préstamos, eliminar
+      const dbRef = doc(db, 'Libros', libroId);
+      await deleteDoc(dbRef);
+      Alert.alert('Libro eliminado correctamente');
+      props.navigation.navigate('LibrosList');
+    } catch (error) {
+      console.error('Error eliminando libro:', error);
+      Alert.alert('Error', 'No se pudo eliminar el libro');
+    }
   };
 
   const openConfirmationAlert = () => {
-    Alert.alert('Eliminar el libro', '¿Estás seguro?', [
-      { text: 'Sí', onPress: () => deleteLibro() },
+    Alert.alert('Eliminar el libro', '¿Estás seguro de que deseas eliminar este libro?', [
+      { text: 'Sí', onPress: deleteLibro },
       { text: 'No', style: 'cancel' },
     ]);
   };
@@ -183,8 +238,6 @@ const LibroDetail = (props) => {
   );
 };
 
-// ... resto del código igual ...
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -206,7 +259,7 @@ const styles = StyleSheet.create({
   },
   input: {
     height: 45,
-    borderColor: '#cccccc', // <- reborde gris
+    borderColor: '#cccccc',
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 12,
@@ -218,7 +271,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   pickerWrapper: {
-    borderColor: '#cccccc', // <- reborde gris
+    borderColor: '#cccccc',
     borderWidth: 1,
     borderRadius: 8,
     backgroundColor: '#f9f9f9',
@@ -248,6 +301,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
-
 
 export default LibroDetail;

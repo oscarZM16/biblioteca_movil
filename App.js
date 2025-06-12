@@ -14,6 +14,7 @@ import CreateUsuario from './screens/Usuarios/CreateUsuario';
 import Home from './screens/Home';
 import CreatePrestamo from './screens/Prestamos/CreatePrestamo';
 import PrestamoList from './screens/Prestamos/PrestamoList';
+import PrestamoDetail from './screens/Prestamos/PrestamoDetail';
 
 
 function MyStack() {
@@ -28,6 +29,7 @@ function MyStack() {
       <Stack.Screen name="UsuarioDetail" component={UsuarioDetail} options={{title: 'Detalles del Usuario'}} />
       <Stack.Screen name="CreatePrestamo" component={CreatePrestamo} options={{title: 'Crear Prestamo'}} />
       <Stack.Screen name="PrestamoList" component={PrestamoList} options={{title: 'Lista de Prestamos'}} />
+      <Stack.Screen name="PrestamoDetail" component={PrestamoDetail} options={{title: 'Detalles del prestamo'}} />
     </Stack.Navigator>
   )
 }

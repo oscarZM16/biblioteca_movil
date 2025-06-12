@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, ScrollView, TouchableOpacity, Text, StyleSheet, Alert } from 'react-native';
+import { View, TextInput, ScrollView, TouchableOpacity, Text, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { db } from '../../database/firebase';
 import { collection, addDoc, getDocs } from 'firebase/firestore';
@@ -63,11 +63,15 @@ const CreateLibro = (props) => {
       return;
     }
 
+    const cantidad = parseInt(state.cantidad);
+
     try {
       await addDoc(collection(db, 'Libros'), {
         nombre: state.nombre.trim(),
         descripcion: state.descripcion.trim(),
-        cantidad: state.cantidad.trim(),
+        cantidad: cantidad,
+        cantidadDisponible: cantidad,
+        cantidadPrestada: 0,
         generoLiterario: state.generoLiterario,
         tematica: state.tematica,
         publicoObjetivo: state.publicoObjetivo,
@@ -83,81 +87,95 @@ const CreateLibro = (props) => {
 
   const renderPicker = (label, selectedValue, onValueChange, items) => (
     <View style={styles.inputGroup}>
-      <Text style={{ marginBottom: 5 }}>{label}</Text>
-      <Picker selectedValue={selectedValue} onValueChange={onValueChange} style={styles.picker}>
-        <Picker.Item label={`Selecciona un ${label.toLowerCase()}`} value="" />
-        {items.map((item) => (
-          <Picker.Item key={item.id} label={item.nombre} value={item.nombre} />
-        ))}
-      </Picker>
+      <Text style={styles.label}>{label}</Text>
+      <View style={styles.pickerWrapper}>
+        <Picker
+          selectedValue={selectedValue}
+          onValueChange={onValueChange}
+          style={styles.picker}
+          dropdownIconColor="#333"
+        >
+          <Picker.Item label={`Selecciona un ${label.toLowerCase()}`} value="" />
+          {items.map((item) => (
+            <Picker.Item key={item.id} label={item.nombre} value={item.nombre} />
+          ))}
+        </Picker>
+      </View>
     </View>
   );
 
   return (
-    <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
-      <View style={styles.inputGroup}>
-        <TextInput
-          placeholder="Nombre del Libro"
-          placeholderTextColor="#999"
-          style={styles.input}
-          value={state.nombre}
-          onChangeText={(value) => handleChangeText('nombre', value)}
-          autoCapitalize="words"
-        />
-      </View>
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.inputGroup}>
+          <TextInput
+            placeholder="Nombre del Libro"
+            placeholderTextColor="#999"
+            style={styles.input}
+            value={state.nombre}
+            onChangeText={(value) => handleChangeText('nombre', value)}
+            autoCapitalize="words"
+          />
+        </View>
 
-      <View style={styles.inputGroup}>
-        <TextInput
-          placeholder="Descripción"
-          placeholderTextColor="#999"
-          style={[styles.input, { height: 100 }]}
-          value={state.descripcion}
-          onChangeText={(value) => handleChangeText('descripcion', value)}
-          multiline
-        />
-      </View>
+        <View style={styles.inputGroup}>
+          <TextInput
+            placeholder="Descripción"
+            placeholderTextColor="#999"
+            style={[styles.input, { height: 100, textAlignVertical: 'top' }]}
+            value={state.descripcion}
+            onChangeText={(value) => handleChangeText('descripcion', value)}
+            multiline
+          />
+        </View>
 
-      <View style={styles.inputGroup}>
-        <TextInput
-          placeholder="Cantidad"
-          placeholderTextColor="#999"
-          style={styles.input}
-          value={state.cantidad}
-          onChangeText={(value) => handleChangeText('cantidad', value)}
-          keyboardType="numeric"
-          maxLength={4}
-        />
-      </View>
+        <View style={styles.inputGroup}>
+          <TextInput
+            placeholder="Cantidad"
+            placeholderTextColor="#999"
+            style={styles.input}
+            value={state.cantidad}
+            onChangeText={(value) => handleChangeText('cantidad', value)}
+            keyboardType="numeric"
+            maxLength={4}
+          />
+        </View>
 
-      {renderPicker('Género Literario', state.generoLiterario, (v) => handleChangeText('generoLiterario', v), opciones.generos)}
-      {renderPicker('Temática', state.tematica, (v) => handleChangeText('tematica', v), opciones.tematicas)}
-      {renderPicker('Público Objetivo', state.publicoObjetivo, (v) => handleChangeText('publicoObjetivo', v), opciones.publicos)}
-      {renderPicker('Tipo de Obra', state.tipoObra, (v) => handleChangeText('tipoObra', v), opciones.tipos)}
+        {renderPicker('Género Literario', state.generoLiterario, (v) => handleChangeText('generoLiterario', v), opciones.generos)}
+        {renderPicker('Temática', state.tematica, (v) => handleChangeText('tematica', v), opciones.tematicas)}
+        {renderPicker('Público Objetivo', state.publicoObjetivo, (v) => handleChangeText('publicoObjetivo', v), opciones.publicos)}
+        {renderPicker('Tipo de Obra', state.tipoObra, (v) => handleChangeText('tipoObra', v), opciones.tipos)}
 
-      <View style={styles.inputGroup}>
-        <Text style={{ marginBottom: 5 }}>Estado</Text>
-        <Picker
-          selectedValue={state.estado}
-          onValueChange={(value) => handleChangeText('estado', value)}
-          style={styles.picker}
-        >
-          <Picker.Item label="Disponible" value="disponible" />
-          <Picker.Item label="Sin stock" value="sin stock" />
-        </Picker>
-      </View>
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Estado</Text>
+          <View style={styles.pickerWrapper}>
+            <Picker
+              selectedValue={state.estado}
+              onValueChange={(value) => handleChangeText('estado', value)}
+              style={styles.picker}
+            >
+              <Picker.Item label="Disponible" value="disponible" />
+              <Picker.Item label="Sin stock" value="sin stock" />
+            </Picker>
+          </View>
+        </View>
 
-      <TouchableOpacity style={styles.button} onPress={createNewLibro} activeOpacity={0.8}>
-        <Text style={styles.buttonText}>Guardar Libro</Text>
-      </TouchableOpacity>
-    </ScrollView>
+        <TouchableOpacity style={styles.button} onPress={createNewLibro} activeOpacity={0.8}>
+          <Text style={styles.buttonText}>Guardar Libro</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 30,
     backgroundColor: '#fff',
+  },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 40,
   },
   inputGroup: {
     marginBottom: 20,
@@ -166,26 +184,37 @@ const styles = StyleSheet.create({
     height: 48,
     borderColor: '#ddd',
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 10,
     paddingHorizontal: 15,
     fontSize: 16,
     color: '#333',
-    backgroundColor: '#fafafa',
+    backgroundColor: '#f9f9f9',
+  },
+  label: {
+    marginBottom: 6,
+    fontWeight: '600',
+    color: '#333',
+    fontSize: 15,
+  },
+  pickerWrapper: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 10,
+    backgroundColor: '#f9f9f9',
+    overflow: 'hidden',
   },
   picker: {
     height: 48,
-    backgroundColor: '#fafafa',
-    borderColor: '#ddd',
-    borderWidth: 1,
-    borderRadius: 8,
+    width: '100%',
+    color: '#333',
   },
   button: {
     backgroundColor: '#007BFF',
     paddingVertical: 14,
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: 'center',
     marginTop: 10,
-    shadowColor: '#2196F3',
+    shadowColor: '#007BFF',
     shadowOpacity: 0.3,
     shadowRadius: 5,
     shadowOffset: { width: 0, height: 3 },
@@ -195,6 +224,22 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
+  pickerWrapper: {
+  borderWidth: 1,
+  borderColor: '#ddd',
+  borderRadius: 10,
+  backgroundColor: '#f9f9f9',
+  overflow: 'hidden',
+  minHeight: 50,
+  justifyContent: 'center',
+},
+picker: {
+  width: '100%',
+  color: '#333',
+  fontSize: 16,
+  paddingHorizontal: 10,
+},
+
 });
 
 export default CreateLibro;

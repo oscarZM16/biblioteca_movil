@@ -1,13 +1,6 @@
+// LibrosList.js
 import React, { useEffect, useState } from 'react';
-import {
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  View,
-  Modal,
-  TextInput,
-} from 'react-native';
+import { ScrollView, Text, TouchableOpacity, StyleSheet, View, Modal, TextInput } from 'react-native';
 import { collection, onSnapshot, getDocs } from 'firebase/firestore';
 import { db } from '../../database/firebase';
 import { ListItem } from '@rneui/themed';
@@ -98,21 +91,31 @@ const LibrosList = (props) => {
     <ScrollView style={styles.container}>
       <Text style={styles.title}>Lista de Libros</Text>
 
-      <TouchableOpacity
-        style={styles.createButton}
-        onPress={() => props.navigation.navigate('CreateLibro')}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.createButtonText}>Crear Libro</Text>
-      </TouchableOpacity>
+      <View style={styles.topButtons}>
+        <TouchableOpacity
+          style={[styles.button, styles.create]}
+          onPress={() => props.navigation.navigate('CreateLibro')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.buttonText}>Crear</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.filterButton}
-        onPress={() => setModalVisible(true)}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.createButtonText}>Filtrar</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.button, styles.filter]}
+          onPress={() => setModalVisible(true)}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.buttonText}>Filtrar</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.button, styles.home]}
+          onPress={() => props.navigation.navigate('Home')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.buttonText}>Inicio</Text>
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.listContainer}>
         {libros.map((libro) => (
@@ -125,7 +128,9 @@ const LibrosList = (props) => {
             <ListItem.Content>
               <ListItem.Title style={styles.listTitle}>{libro.nombre}</ListItem.Title>
               <ListItem.Subtitle style={styles.listSubtitle}>{libro.descripcion}</ListItem.Subtitle>
-              <Text style={styles.metaText}>Cantidad: {libro.cantidad}</Text>
+              <Text style={styles.metaText}>Cantidad total: {libro.cantidad}</Text>
+              <Text style={styles.metaText}>Cantidad disponible: {libro.cantidadDisponible}</Text>
+              <Text style={styles.metaText}>Cantidad prestada: {libro.cantidadPrestada}</Text>
               <Text style={styles.metaText}>Género: {libro.generoLiterario}</Text>
               <Text style={styles.metaText}>Temática: {libro.tematica}</Text>
               <Text style={styles.metaText}>Público: {libro.publicoObjetivo}</Text>
@@ -178,23 +183,28 @@ const LibrosList = (props) => {
 const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 20, paddingTop: 15, backgroundColor: '#fff' },
   title: { fontSize: 22, fontWeight: '700', textAlign: 'center', marginBottom: 15, color: '#222' },
-  createButton: {
-    backgroundColor: '#007BFF',
-    marginHorizontal: 30,
-    marginBottom: 10,
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  filterButton: {
-    backgroundColor: '#28A745',
-    marginHorizontal: 30,
+  topButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginBottom: 20,
-    borderRadius: 8,
+    gap: 8,
+  },
+  button: {
+    flex: 1,
     paddingVertical: 14,
+    borderRadius: 8,
     alignItems: 'center',
   },
-  createButtonText: { color: '#fff', fontSize: 17, fontWeight: '600' },
+  create: {
+    backgroundColor: '#007BFF',
+  },
+  filter: {
+    backgroundColor: '#28A745',
+  },
+  home: {
+    backgroundColor: '#6F42C1',
+  },
+  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   listContainer: { marginBottom: 40 },
   listItem: { borderRadius: 8, marginBottom: 10, backgroundColor: '#f8f8f8' },
   listTitle: { fontWeight: '700', fontSize: 17 },
@@ -232,7 +242,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
   },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 });
 
 export default LibrosList;
