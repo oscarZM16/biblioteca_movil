@@ -8,6 +8,7 @@ const CreatePrestamo = (props) => {
     const [state, setState] = useState({
         usuarioId: '',
         libroId: '',
+        
         fechaPrestamo: '',
         estado: 'prestado',
     });
@@ -102,7 +103,7 @@ const CreatePrestamo = (props) => {
         </TouchableOpacity>
         </ScrollView>
     );
-    };
+};
 
 const styles = StyleSheet.create({
     container: {

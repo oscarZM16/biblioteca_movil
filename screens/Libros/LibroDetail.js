@@ -1,6 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, TextInput, ScrollView, Alert, Text, TouchableOpacity } from 'react-native';
-import { doc, getDoc, deleteDoc, updateDoc } from 'firebase/firestore';
+import {
+  View,
+  StyleSheet,
+  TextInput,
+  ScrollView,
+  Alert,
+  Text,
+  TouchableOpacity,
+} from 'react-native';
+import {
+  doc,
+  getDoc,
+  deleteDoc,
+  updateDoc,
+  getDocs,
+  collection,
+} from 'firebase/firestore';
+import { Picker } from '@react-native-picker/picker';
 import { db } from '../../database/firebase';
 
 const LibroDetail = (props) => {
@@ -8,10 +24,41 @@ const LibroDetail = (props) => {
     nombre: '',
     descripcion: '',
     cantidad: '',
+    generoLiterario: '',
+    tematica: '',
+    publicoObjetivo: '',
+    tipoObra: '',
+  });
+
+  const [opciones, setOpciones] = useState({
+    generos: [],
+    tematicas: [],
+    publicos: [],
+    tipos: [],
   });
 
   const handleChangeText = (name, value) => {
     setLibro({ ...Libros, [name]: value });
+  };
+
+  const getOpcionesDesdeFirebase = async () => {
+    const colecciones = ['generoLiterario', 'tematica', 'publicoObjetivo', 'tipoObra'];
+    const nuevasOpciones = {};
+
+    for (const col of colecciones) {
+      const querySnapshot = await getDocs(collection(db, col));
+      nuevasOpciones[col] = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        nombre: doc.data().nombre,
+      }));
+    }
+
+    setOpciones({
+      generos: nuevasOpciones.generoLiterario,
+      tematicas: nuevasOpciones.tematica,
+      publicos: nuevasOpciones.publicoObjetivo,
+      tipos: nuevasOpciones.tipoObra,
+    });
   };
 
   const getLibroById = async (id) => {
@@ -23,6 +70,10 @@ const LibroDetail = (props) => {
         nombre: data.nombre,
         descripcion: data.descripcion,
         cantidad: data.cantidad.toString(),
+        generoLiterario: data.generoLiterario || '',
+        tematica: data.tematica || '',
+        publicoObjetivo: data.publicoObjetivo || '',
+        tipoObra: data.tipoObra || '',
       });
     }
   };
@@ -33,6 +84,10 @@ const LibroDetail = (props) => {
       nombre: Libros.nombre,
       descripcion: Libros.descripcion,
       cantidad: parseInt(Libros.cantidad),
+      generoLiterario: Libros.generoLiterario,
+      tematica: Libros.tematica,
+      publicoObjetivo: Libros.publicoObjetivo,
+      tipoObra: Libros.tipoObra,
     });
     Alert.alert('Libro actualizado');
     props.navigation.navigate('LibrosList');
@@ -52,63 +107,106 @@ const LibroDetail = (props) => {
   };
 
   useEffect(() => {
+    getOpcionesDesdeFirebase();
     getLibroById(props.route.params.libroId);
   }, []);
 
+  const renderPicker = (label, selectedValue, onValueChange, items) => (
+    <View style={styles.inputGroup}>
+      <Text style={styles.label}>{label}</Text>
+      <View style={styles.pickerWrapper}>
+        <Picker
+          selectedValue={selectedValue}
+          onValueChange={onValueChange}
+          dropdownIconColor="#333"
+        >
+          <Picker.Item label={`Seleccione ${label.toLowerCase()}`} value="" />
+          {items.map((item) => (
+            <Picker.Item key={item.id} label={item.nombre} value={item.nombre} />
+          ))}
+        </Picker>
+      </View>
+    </View>
+  );
+
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView contentContainerStyle={styles.scrollContainer} style={styles.container}>
       <View style={styles.inputGroup}>
+        <Text style={styles.label}>Nombre del Libro</Text>
         <TextInput
-          placeholder="Nombre Libro"
           style={styles.input}
           value={Libros.nombre}
           onChangeText={(value) => handleChangeText('nombre', value)}
+          placeholder="Ingrese el nombre"
         />
       </View>
+
       <View style={styles.inputGroup}>
+        <Text style={styles.label}>Descripción</Text>
         <TextInput
-          placeholder="Descripción Libro"
           style={[styles.input, styles.textArea]}
           value={Libros.descripcion}
           onChangeText={(value) => handleChangeText('descripcion', value)}
+          placeholder="Ingrese una descripción"
           multiline
           numberOfLines={4}
           textAlignVertical="top"
         />
       </View>
+
       <View style={styles.inputGroup}>
+        <Text style={styles.label}>Cantidad</Text>
         <TextInput
-          placeholder="Cantidad Libro"
           style={styles.input}
           value={Libros.cantidad}
           onChangeText={(value) => handleChangeText('cantidad', value)}
+          placeholder="Ingrese la cantidad"
           keyboardType="numeric"
         />
       </View>
 
-      <TouchableOpacity style={styles.updateButton} onPress={updateLibro} activeOpacity={0.8}>
-        <Text style={styles.buttonText}>Actualizar Libro</Text>
-      </TouchableOpacity>
+      {renderPicker('Género Literario', Libros.generoLiterario, (value) => handleChangeText('generoLiterario', value), opciones.generos)}
+      {renderPicker('Temática', Libros.tematica, (value) => handleChangeText('tematica', value), opciones.tematicas)}
+      {renderPicker('Público Objetivo', Libros.publicoObjetivo, (value) => handleChangeText('publicoObjetivo', value), opciones.publicos)}
+      {renderPicker('Tipo de Obra', Libros.tipoObra, (value) => handleChangeText('tipoObra', value), opciones.tipos)}
 
-      <TouchableOpacity style={styles.deleteButton} onPress={openConfirmationAlert} activeOpacity={0.8}>
-        <Text style={styles.buttonText}>Borrar Libro</Text>
-      </TouchableOpacity>
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity style={styles.updateButton} onPress={updateLibro} activeOpacity={0.8}>
+          <Text style={styles.buttonText}>Actualizar Libro</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.deleteButton} onPress={openConfirmationAlert} activeOpacity={0.8}>
+          <Text style={styles.buttonText}>Borrar Libro</Text>
+        </TouchableOpacity>
+      </View>
     </ScrollView>
   );
 };
 
+// ... resto del código igual ...
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 25,
     backgroundColor: '#fff',
   },
+  scrollContainer: {
+    paddingHorizontal: 25,
+    paddingTop: 25,
+    paddingBottom: 80,
+  },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: 25,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
+    color: '#333',
   },
   input: {
     height: 45,
-    borderColor: '#2196F3',
+    borderColor: '#cccccc', // <- reborde gris
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 12,
@@ -117,29 +215,32 @@ const styles = StyleSheet.create({
   },
   textArea: {
     height: 100,
+    textAlignVertical: 'top',
+  },
+  pickerWrapper: {
+    borderColor: '#cccccc', // <- reborde gris
+    borderWidth: 1,
+    borderRadius: 8,
+    backgroundColor: '#f9f9f9',
+    overflow: 'hidden',
+  },
+  buttonContainer: {
+    marginTop: 30,
+    gap: 15,
   },
   updateButton: {
-    backgroundColor: '#007BFF', // Azul vibrante
+    backgroundColor: '#007BFF',
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',
-    marginBottom: 15,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 5,
+    elevation: 2,
   },
   deleteButton: {
-    backgroundColor: '#FF4C4C', // Rojo intenso
+    backgroundColor: '#FF4C4C',
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 5,
+    elevation: 2,
   },
   buttonText: {
     color: '#fff',
@@ -147,5 +248,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+
 
 export default LibroDetail;
