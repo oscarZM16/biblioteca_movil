@@ -9,6 +9,14 @@ const PrestamoDetail = ({ route, navigation }) => {
   const [usuario, setUsuario] = useState(null);
   const [libro, setLibro] = useState(null);
 
+  const calcularMulta = (prestamo, tarifaPorDia = 1000) => {
+    if (!prestamo.fechaFinalizacion || !prestamo.fechaDevuelto) return 0;
+    const fechaDev = new Date(prestamo.fechaFinalizacion);
+    const fechaReal = new Date(prestamo.fechaDevuelto);
+    const diasRetraso = Math.ceil((fechaReal - fechaDev) / (1000 * 60 * 60 * 24));
+    return diasRetraso > 0 ? diasRetraso * tarifaPorDia : 0;
+  };
+
   useEffect(() => {
     const cargarDatos = async () => {
       const prestamoDoc = await getDoc(doc(db, 'Prestamos', prestamoId));
@@ -33,10 +41,19 @@ const PrestamoDetail = ({ route, navigation }) => {
     }
 
     try {
-      // Marcar el préstamo como finalizado
-      await updateDoc(doc(db, 'Prestamos', prestamo.id), { estado: 'finalizado' });
+      const fechaHoy = new Date().toISOString().split('T')[0];
 
-      // Actualizar el libro
+      await updateDoc(doc(db, 'Prestamos', prestamo.id), {
+        estado: 'finalizado',
+        fechaDevuelto: fechaHoy,
+      });
+
+      setPrestamo(prev => ({
+        ...prev,
+        estado: 'finalizado',
+        fechaDevuelto: fechaHoy,
+      }));
+
       const nuevaCantidadDisponible = (libro.cantidadDisponible || 0) + 1;
       const nuevaCantidadPrestada = (libro.cantidadPrestada || 1) - 1;
 
@@ -49,12 +66,14 @@ const PrestamoDetail = ({ route, navigation }) => {
       Alert.alert('Préstamo finalizado');
       navigation.goBack();
     } catch (error) {
-      console.error(error);
+      console.error('Error al finalizar préstamo:', error);
       Alert.alert('Error al finalizar el préstamo');
     }
   };
 
   if (!prestamo || !usuario || !libro) return <Text>Cargando...</Text>;
+
+  const multa = calcularMulta(prestamo);
 
   return (
     <View style={styles.container}>
@@ -72,8 +91,29 @@ const PrestamoDetail = ({ route, navigation }) => {
       <Text style={styles.label}>Fecha Finalización:</Text>
       <Text style={styles.value}>{prestamo.fechaFinalizacion}</Text>
 
+      {prestamo.fechaDevuelto && (
+        <>
+          <Text style={styles.label}>Fecha Devuelto:</Text>
+          <Text style={styles.value}>{prestamo.fechaDevuelto}</Text>
+        </>
+      )}
+
       <Text style={styles.label}>Estado:</Text>
       <Text style={styles.value}>{prestamo.estado}</Text>
+
+      {multa > 0 && (
+        <>
+          <Text style={styles.label}>Multa:</Text>
+          <Text
+            style={[
+              styles.value,
+              { color: prestamo.multaPagada ? 'green' : 'red' },
+            ]}
+          >
+            ${multa} {prestamo.multaPagada ? '(Pagada)' : '(Pendiente)'}
+          </Text>
+        </>
+      )}
 
       {prestamo.estado !== 'finalizado' && (
         <TouchableOpacity style={styles.button} onPress={finalizarPrestamo}>

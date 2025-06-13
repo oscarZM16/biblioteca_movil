@@ -1,21 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import {
-  View,
-  StyleSheet,
-  TextInput,
-  ScrollView,
-  Alert,
-  Text,
-  TouchableOpacity,
-} from 'react-native';
-import {
-  doc,
-  getDoc,
-  deleteDoc,
-  updateDoc,
-  getDocs,
-  collection,
-} from 'firebase/firestore';
+import { View, StyleSheet, TextInput, ScrollView, Alert, Text, TouchableOpacity, } from 'react-native';
+import { doc, getDoc, deleteDoc, updateDoc, getDocs, collection, } from 'firebase/firestore';
 import { Picker } from '@react-native-picker/picker';
 import { db } from '../../database/firebase';
 
@@ -126,24 +111,25 @@ const LibroDetail = (props) => {
     const libroId = props.route.params.libroId;
 
     try {
-      // Verifica si hay préstamos asociados al libro
-      const prestamosSnapshot = await getDocs(
-        collection(db, 'Prestamos')
-      );
-
+      const prestamosSnapshot = await getDocs(collection(db, 'Prestamos'));
       const prestamosAsociados = prestamosSnapshot.docs.filter(
         doc => doc.data().libroId === libroId
       );
 
       if (prestamosAsociados.length > 0) {
-        Alert.alert(
-          'No se puede eliminar',
-          'Este libro tiene préstamos asociados y no puede ser eliminado.'
+        const todosFinalizados = prestamosAsociados.every(
+          doc => doc.data().estado === 'finalizado'
         );
-        return;
+
+        if (!todosFinalizados) {
+          Alert.alert(
+            'No se puede eliminar',
+            'Este libro tiene préstamos en curso o no finalizados. No puede ser eliminado.'
+          );
+          return;
+        }
       }
 
-      // Si no hay préstamos, eliminar
       const dbRef = doc(db, 'Libros', libroId);
       await deleteDoc(dbRef);
       Alert.alert('Libro eliminado correctamente');

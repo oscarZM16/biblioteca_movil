@@ -42,6 +42,14 @@ const Home = (props) => {
             >
             <Text style={styles.buttonText}>Ir a Lista de Prestamo</Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+            style={styles.button}
+            onPress={() => handleNavigate('ReportesMenuScreen')}
+            activeOpacity={0.7}
+            >
+            <Text style={styles.buttonText}>Ir a Reportes</Text>
+            </TouchableOpacity>
         </View>
         </View>
     );

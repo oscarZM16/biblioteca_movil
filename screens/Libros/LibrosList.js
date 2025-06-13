@@ -1,4 +1,3 @@
-// LibrosList.js
 import React, { useEffect, useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, StyleSheet, View, Modal, TextInput } from 'react-native';
 import { collection, onSnapshot, getDocs } from 'firebase/firestore';
